@@ -86,9 +86,10 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 
 ### Naming Conventions
 
-- **Jobs/Steps:** Use Title Case for all words, capitalizing every word including articles and prepositions (e.g., "Install Dependencies", "Checkout Repository", "Run Tests For All Platforms").
+- **Jobs/Steps:** Capitalize all words in job and step names (e.g., "Install Dependencies", "Checkout Repository", "Run Tests For All Platforms").
   - This improves readability in the GitHub Actions UI.
   - Avoid lowercase names like "checkout repository".
+  - Note: This differs from traditional Title Case rules but provides consistency in the Actions UI.
 - **IDs/Outputs/Inputs:** Use snake_case (e.g., `my_output_value`).
 - **Matrix Jobs:** Include matrix variables in the job name (e.g., `Build for ${{ matrix.os }}`).
 
@@ -173,9 +174,11 @@ concurrency:
 ```
 
 This ensures:
-- PR runs: `CI Workflow-feature-branch`
-- Push runs: `CI Workflow-refs/heads/main`
+- PR runs: `CI Workflow-feature-branch` (using the branch name from `github.head_ref`)
+- Push runs: `CI Workflow-refs/heads/main` (using the full ref from `github.ref`)
 - PRs don't conflict with target branch runs
+
+Note: `github.workflow` contains the workflow name exactly as defined in the `name` field.
 
 ### Permission Patterns
 
