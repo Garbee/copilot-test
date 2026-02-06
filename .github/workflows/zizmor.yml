@@ -1,0 +1,39 @@
+name: Zizmor CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    name: Zizmor
+    permissions:
+      contents: read # Needed for private repos
+      actions: read # Needed for private repos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Scan
+        uses: zizmorcore/zizmor-action@135698455da5c3b3e55f73f4419e481ab68cdd95 # v0.4.1
+        with:
+          annotations: true
+          advanced-security: false
+          persona: auditor # The strictest mode showing all potential issues
+          # Scope down what we run against while the patches land. After everything is touched, inputs can be removed
+          # to scan it all continuously.
+          inputs: .github/workflows/
