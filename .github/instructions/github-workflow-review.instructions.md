@@ -86,7 +86,7 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 
 ### Naming Conventions
 
-- **Jobs/Steps:** Use Title Case for all words (e.g., "Install Dependencies", "Checkout Repository").
+- **Jobs/Steps:** Use Title Case for all words, capitalizing every word including articles and prepositions (e.g., "Install Dependencies", "Checkout Repository", "Run Tests For All Platforms").
   - This improves readability in the GitHub Actions UI.
   - Avoid lowercase names like "checkout repository".
 - **IDs/Outputs/Inputs:** Use snake_case (e.g., `my_output_value`).
@@ -96,7 +96,11 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 
 - **Single-line Strings:** Do not use block scalars (e.g., `|`, `>`) for single values. Use plain strings instead.
   - Block scalars introduce trailing newlines/whitespace and make edits error-prone.
-  - Example: Use `inputs: .github/workflows/` instead of block scalar format.
+  - Example: Use `inputs: .github/workflows/` instead of:
+    ```yaml
+    inputs: |
+      .github/workflows/
+    ```
 - **No Anchors:** Avoid YAML anchors (`&` / `*`).
 
 ### Expressions
@@ -169,8 +173,8 @@ concurrency:
 ```
 
 This ensures:
-- PR runs: `Workflow-Name-feature-branch`
-- Push runs: `Workflow-Name-refs/heads/main`
+- PR runs: `CI Workflow-feature-branch`
+- Push runs: `CI Workflow-refs/heads/main`
 - PRs don't conflict with target branch runs
 
 ### Permission Patterns
