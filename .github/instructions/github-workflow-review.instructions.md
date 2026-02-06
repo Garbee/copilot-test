@@ -52,10 +52,13 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 ### Concurrency
 
 - **Concurrency Block:** Workflows that run on both `push` and `pull_request` events should define a `concurrency` block to prevent resource conflicts.
-- **Group Pattern:** Use `group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}` to ensure PR runs use the branch name (via `github.head_ref`) and push runs use the full ref.
-  - `github.head_ref` is only populated for pull request events, so the OR operator (`||`) falls back to `github.ref` for push events.
-  - This ensures PR runs are grouped separately from target branch runs (e.g., `Workflow-feature-branch` vs `Workflow-refs/heads/main`).
-- **Cancel in Progress:** Include `cancel-in-progress: true` when appropriate to cancel older runs when new commits are pushed.
+- **Group Pattern:** Use `group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}` to ensure PR runs use the branch name (via `github.head_ref`) and push runs use the branch/tag name (via `github.ref_name`).
+  - `github.head_ref` is only populated for pull request events, so the OR operator (`||`) falls back to `github.ref_name` for push events.
+  - `github.ref_name` provides a succinct name (e.g., `main`) instead of the full ref path (e.g., `refs/heads/main`).
+  - This ensures PR runs are grouped separately from target branch runs (e.g., `Workflow-feature-branch` vs `Workflow-main`).
+- **Cancel in Progress:** Use `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` to cancel outdated PR runs while allowing push events to complete.
+  - PR runs benefit from cancellation when new commits are pushed.
+  - Push events to protected branches should complete to ensure deployment pipelines finish.
 
 ---
 
@@ -95,12 +98,19 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 
 ### YAML Formatting
 
-- **Single-line Strings:** Do not use block scalars (e.g., `|`, `>`) for single values. Use plain strings instead.
-  - Block scalars introduce trailing newlines/whitespace and make edits error-prone.
-  - Example: Use `inputs: .github/workflows/` instead of:
+- **Single-line Strings:** Do not use block scalars (e.g., `|`, `>`) for single-line values. Use plain strings instead.
+  - Block scalars introduce trailing newlines/whitespace and make edits error-prone for single values.
+  - Single-line example - Use `inputs: .github/workflows/` instead of:
     ```yaml
     inputs: |
       .github/workflows/
+    ```
+  - Multi-line example - Block scalars ARE appropriate when you have multiple lines:
+    ```yaml
+    run: |
+      echo "First command"
+      echo "Second command"
+      npm test
     ```
 - **No Anchors:** Avoid YAML anchors (`&` / `*`).
 
@@ -169,14 +179,15 @@ You are an expert GitHub Actions engineer and security reviewer. Your goal is to
 
 ```yaml
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
 This ensures:
 - PR runs: `CI Workflow-feature-branch` (using the branch name from `github.head_ref`)
-- Push runs: `CI Workflow-refs/heads/main` (using the full ref from `github.ref`)
+- Push runs: `CI Workflow-main` (using the branch/tag name from `github.ref_name`)
 - PRs don't conflict with target branch runs
+- Only PR runs are cancelled when new commits are pushed; push events complete fully
 
 Note: `github.workflow` contains the workflow name exactly as defined in the `name` field.
 
@@ -203,11 +214,14 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   test:
     name: Run Tests
